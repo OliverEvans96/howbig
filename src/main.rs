@@ -8,6 +8,7 @@ use usvg::{fontdb, Tree};
 /// Count the number of opaque pixels in an SVG.
 #[derive(Debug, Parser)]
 struct Opts {
+    /// path to SVG file
     path: PathBuf,
 }
 
