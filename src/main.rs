@@ -8,8 +8,14 @@ use usvg::{fontdb, Tree};
 /// Count the number of opaque pixels in an SVG.
 #[derive(Debug, Parser)]
 struct Opts {
-    /// path to SVG file
+    /// Path to SVG file
     path: PathBuf,
+    /// Calculate opaque as a percentage
+    #[clap(short, long)]
+    percentage: bool,
+    /// Calculate opaque as a percentage of bounding square
+    #[clap(short, long)]
+    square: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -17,9 +23,23 @@ fn main() -> anyhow::Result<()> {
 
     let svg = load_svg(&opts.path)?;
     let pixmap = render_svg(svg)?;
-    let area = calculate_area(pixmap);
+    let area = calculate_area(&pixmap);
 
-    println!("{}", area);
+    if opts.percentage {
+        let w = pixmap.width();
+        let h = pixmap.height();
+        let total_area = if opts.square {
+            let longest_dim = w.max(h);
+            longest_dim * longest_dim
+        } else {
+            w * h
+        };
+        let ratio = (area as f64) / (total_area as f64);
+        let percentage = 100.0 * ratio;
+        println!("{:.0}%", percentage);
+    } else {
+        println!("{}", area);
+    }
 
     Ok(())
 }
@@ -49,7 +69,7 @@ fn render_svg(svg: Tree) -> anyhow::Result<Pixmap> {
     Ok(pixmap)
 }
 
-fn calculate_area(pixmap: Pixmap) -> u64 {
+fn calculate_area(pixmap: &Pixmap) -> u32 {
     let mut area = 0;
     for pixel in pixmap.pixels() {
         if pixel.is_opaque() {
